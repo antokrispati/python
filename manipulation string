@@ -1,0 +1,27 @@
+import pandas as pd
+
+#define address path
+file_path = 'D:\\Belajar\\Python\\FORMAT\\box.xlsx'
+
+#load file path based on sheet name
+df = pd.read_excel(file_path, sheet_name='Box-sunvone2@sunvone.com')
+
+#print(df)
+
+#function for add new character and split string
+def ubah_format(string):
+    return ':'.join(string[i:i+2] for i in range (0, len(string), 2))
+
+mac = df['MAC']
+
+print(mac)
+
+df['MAC'] = df['MAC'].apply(ubah_format)
+
+print(df)
+
+#define to save path file
+#save_file_path = 'D:\\Belajar\\Python\\FORMAT\\edit_mac.xlsx'
+
+#save the file and defin sheet name
+#df.to_excel(save_file_path, sheet_name='Box-sunvone2@sunvone.com', index=False)
