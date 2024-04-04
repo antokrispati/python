@@ -1,0 +1,68 @@
+import time #untuk mengakses web agar terbuka semua menggunakan time sleep
+from selenium import webdriver #membuka akses web agar dapat discrap
+from bs4 import BeautifulSoup as bs4
+import pandas as pd #untuk proses data menjadi dataframe
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC #membuka 1 element akan terbuka
+from selenium.webdriver.common.by import By
+
+url = 'https://www.tokopedia.com/search?q=set+top+box&source=universe&st=product&srp_component_id=02.07.02.01'
+driver = webdriver.Chrome()
+driver.get(url)
+
+data=[]
+# for i in range(5):
+WebDriverWait(driver, 5).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#zeus-root")))
+time.sleep(2)
+    
+for i in range(70):
+    driver.execute_script("window.scrollBy(0, 250)")
+    time.sleep(1)
+        
+    #scroll pagenation
+    driver.execute_script("window.scrollBy(50, 0)")
+    time.sleep(1)
+
+
+    soup = bs4(driver.page_source, "html.parser")
+    # print(soup)
+    for items in soup.find_all('div', class_='css-1asz3by'):
+        nama_produk = items.find('div', class_='css-3um8ox').text
+        harga = items.find('div', class_='css-h66vau').text
+    
+    
+    #mengambil nilai rating menggunakan statment jika ada nilai kosong
+    rtg = items.findAll('span', class_='css-t70v7i')
+    if len(rtg) > 0:
+        rating = items.find('span', class_='css-t70v7i').text
+    else:
+        rating = ''
+        
+    #mengambil jumlah terjual menggunakan statment jika ada nilai kosong
+    tjl = items.findAll('span', class_='css-1sgek4h')
+    if len(tjl) > 0:
+        terjual = items.find('span', class_='css-1sgek4h').text
+    else:
+        terjual = ''
+        
+    for item2 in items.findAll('div', class_='css-1rn0irl'):
+        lokasi = item2.findAll('span', class_='css-1kdc32b')[0].text
+        toko = item2.findAll('span', class_='css-1kdc32b')[1].text
+    
+        data.append(
+            (toko, lokasi, nama_produk, harga, terjual, rating)
+        )
+    
+    #pagenation
+    # time.sleep(2)
+    # driver.find_element(By.CSS_SELECTOR, "button[aria-label='Laman berikutnya']").click()
+    # time.sleep(3)
+    
+df = pd.DataFrame(data, columns=['Toko', 'Lokasi', 'Nama Barang', 'Harga', 'Terjual', 'Rating'])
+print(df)
+
+#save file to excel
+# df.to_excel('data_stb.xlsx', index=False)
+# print("Data tersimpan")
+    
+driver.close()
