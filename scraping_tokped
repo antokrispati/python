@@ -1,68 +1,77 @@
-import time #untuk mengakses web agar terbuka semua menggunakan time sleep
-from selenium import webdriver #membuka akses web agar dapat discrap
-from bs4 import BeautifulSoup as bs4
-import pandas as pd #untuk proses data menjadi dataframe
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC #membuka 1 element akan terbuka
-from selenium.webdriver.common.by import By
+import requests
+import json
+import pandas as pd
 
-url = 'https://www.tokopedia.com/search?q=set+top+box&source=universe&st=product&srp_component_id=02.07.02.01'
-driver = webdriver.Chrome()
-driver.get(url)
+cari = 'handphone'
+url = 'https://gql.tokopedia.com/graphql/SearchProductQueryV4'
 
-data=[]
-# for i in range(5):
-WebDriverWait(driver, 5).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#zeus-root")))
-time.sleep(2)
-    
-for i in range(70):
-    driver.execute_script("window.scrollBy(0, 250)")
-    time.sleep(1)
-        
-    #scroll pagenation
-    driver.execute_script("window.scrollBy(50, 0)")
-    time.sleep(1)
+header= {
+'authority': 'gql.tokopedia.com',
+'method': 'POST',
+'path': '/graphql/SearchProductQueryV4',
+'scheme': 'https',
+'accept': '*/*',
+'accept-encoding': 'gzip, deflate, br',
+'accept-language': 'en-US,en;q=0.9',
+'content-length': '3949',
+'content-type': 'application/json',
+'cookie': 'DID_JS=KzJmReql8mI/+wA1qJ/VP75e8Urqam327vY4sSd9mlY=; _SID_Tokopedia_=95KnQB_Pp4udlnP6bSzBwP5GI_bkwp33SGn-LjqXGbAQ1G6KN9m1HRYk9SylTuLONyXHy9zgOwUpGCbrElNRXEdN4i3q-U48B7XkdBz3ufhfLx8YUAavyix-Sc383sFa; DID=62b88c399b43f3b06d2fd7edfd8ce9fb7254991c5ad338b4b6d192dfcccb715c59d0aa7ddd2b7e8dc796155551899867; _gcl_au=1.1.315270628.1702277997; _UUID_NONLOGIN_=03a787f2a557ff496c2b48955169de97; hfv_banner=true; _gid=GA1.2.637211630.1702277997; _UUID_CAS_=1824d154-486c-4092-be41-0f669acba148; _fbp=fb.1.1702278002410.991193331; TOPATK=PFuzOTrfS4u-LO5zV2Xf_A; l=1; uidh=u/KWu7WFpwhxyXppm+LbW68IvVlaN/pjRym8A60bNcc=; g_yolo_production=1; _hjSessionUser_714968=eyJpZCI6IjVmMTUwOTk3LWFmYWUtNTA3Zi1hMTAyLTQ4Yzk3YTA2MDY4ZSIsImNyZWF0ZWQiOjE3MDIyNzgwMDUxNDIsImV4aXN0aW5nIjp0cnVlfQ==; FPF=1; uide=a3UlKL+7IbkZ/OusX14C05q/uZ84ZzZkRjxAW18AQwN8OYBD7g==; aus=1; _CASE_=277e3815387e666e6e6b68707e3d15387e666c707e303e307e667e163d373d2e283d7c0c292f3d287e707e3f15387e666d6b6a707e3033323b7e667e7e707e303d287e667e7e707e2c1f337e667e7e707e2b15387e666d6e6e6d6c6f6b69707e2f15387e666d6d696f6c696b6f707e2f08252c397e667e6e347e707e2b342f7e667e0727007e2b3d2e393433292f39033538007e666d6e6e6d6c6f6b6970007e2f392e2a353f390328252c39007e66007e6e34007e70007e030328252c39323d3139007e66007e0b3d2e393433292f392f007e217027007e2b3d2e393433292f39033538007e666c70007e2f392e2a353f390328252c39007e66007e6d6931007e70007e030328252c39323d3139007e66007e0b3d2e393433292f392f007e21017e707e30092c387e667e6e6c6e6f716d6e716d6d086d68666c6d666f64776c6b666c6c7e21; bm_sz=A5F7E53287D21A8C7BE4E5A2EB8DC331~YAAQDhreFzrAyluMAQAAi7jaWxalP4cvADRIKs4Zy126T1WYIg/5auEJNW2ZgaUayKdJQd/X+gFd0iO7FPntg/00Qb0vo1ZggAUoH1SE0z34sS3dsc7/8WFXZila3iTrZJJqTrJPw1nZRCZOkxoNFZO2W3euXe1WyX9T/N20Rp3J+kl2pIOCIsXt7FBmD5WXIENqqvVxAH3FLIGK5OBWs11UugkpXN58pFpcWb2+vR2CBi9nL/Wao60MF12Ec8xX6PLwzjaqouaHPq18PgGaSnK/okiOYw6p0CnN4nkbA3tFb4kG7g8=~4473393~4539446; tuid=236551871; ak_bmsc=39A1417A81F0D5829A1131DC6A2709D1~000000000000000000000000000000~YAAQ5uwZuI6IpluMAQAA+OH3Wxb3tRytQyVBBvVtJ/TI/Q+bTBQGEwR16kYHQlYl8kvBTFavYcvy9We+ZgjGL+ILQdsi23UY1qt4g/WQD4PaV0vnz32VhYRyycKf3PFlOm24VXntanfxYfZw7RE/QTLuQ6M4nJ4wCwvFKZ24cmCefU+NJZtFBljw186rDYYv/3X/l/fHuIqdu55gCVAOiTevyAHB5Ql4TWH+xpqG9qwhO7zE3QluZO+GljK6rA43FlDMwKad1qMFdF4verzb0S1n/ASbLzJ3ORiEEwgAvDQ7wr595UwIC+5oJpfemb/N1e25YEfi8+Bo6nvDMBEumuu1kJ7b5JARmiGkXoWtvhD/lbDCRj9JVqImOHh/hg1fWcX/smvwenGK8wm5y5Vrrm3OYC8i/X81RoCe9SHhpt8eXZVS5Pr/pzc+o2edYRTCNZX1g2Y85vW1BbIxNkrSh3kKVkQvYHgpqyLMKNkoRU47OYQs3EvgZqkOwK+c39uWy99n; AMP_TOKEN=%24NOT_FOUND; _abck=1A89E747AF792CF9AA7D862F8FC50409~0~YAAQDudbJMOuyluMAQAANMMCXAutEE24Z7TU5Q3AZHNdLExXDLaj6ba09C12odIKm5ueS/cVI4ZgV61mBD9wPFfgrkB3VmVElGIPzwsE6wZEka0zsTbikjUtUJ7NEQ8gpYNi4Bqlyf8cZ+EmjLMWLyxjEjWZM2qoE6oNPyJ/7zBBtH1UPo5yet5AnE02aGeaowu6G1JHwlWyq3V01cOFiobuSCVsQWfJK8qDGgHBH/VU7c+wM9dW2+PTP9nyKNp+gGHqpXfkAGLkithuBGh2G5id9fg1uehYiuMPYaxbjAayewCQQagY2VtBmQqp2RXDRWnjm/RxDXT2/ZjY5FRC2qsNxObIIqZeT8cr8aMhwunv+h8bYSlP3kpJU64KTNwkHvDWTjhGNZKLz9IkmXSenLygrWUssFStwq7i~-1~-1~-1; _ga=GA1.2.175311427.1702277997; ISID=%7B%22www.tokopedia.com%22%3A%22d3d3LnRva29wZWRpYS5jb20%3D.868c8ad67ea8c4121b2443132812d90d.1702347918155.1702347918155.1702351010345.5%22%2C%22accounts.tokopedia.com%22%3A%22YWNjb3VudHMudG9rb3BlZGlhLmNvbQ%3D%3D.8d91b482ea8684cc4b3fdfd13802e359.1702278005149.1702278005149.1702278094946.1%22%7D; webauthn-session=9764e338-d050-4af2-a810-1ec7a14c1327; _gat_UA-9801603-1=1; _dc_gtm_UA-126956641-6=1; _dc_gtm_UA-9801603-1=1; _ga_70947XW48P=GS1.1.1702350020.3.1.1702351359.59.0.0',
+'origin': 'https://www.tokopedia.com',
+'referer': 'https://www.tokopedia.com/search?st=product&q=handphone&srp_component_id=02.01.00.00&srp_page_id=&srp_page_title=&navsource=',
+'sec-ch-ua': '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
+'sec-ch-ua-mobile': '?0',
+'sec-ch-ua-platform': '"Windows"',
+'sec-fetch-dest': 'empty',
+'sec-fetch-mode': 'cors',
+'sec-fetch-site': 'same-site',
+'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+'x-device': 'default_v3',
+'x-source': 'tokopedia-lite',
+'x-tkpd-lite-service': 'zeus',
+'x-version': 'bbe393e'
+}
 
+#pagenation
+def get_params():
+    params = []
+    for i in range(0, 100):
+        param = "device=desktop&navsource=&ob=23&page={}&q={}handphone&related=true&rows=60&safe_search=false&scheme=https&shipping=&show_adult=false&source=search&srp_component_id=02.01.00.00&srp_page_id=&srp_page_title=&st=product&start={}&topads_bucket=true&unique_id=c9ab2421a261b8c5ae9175c90a38f35f&user_addressId=69333763&user_cityId=148&user_districtId=1660&user_id=17066797&user_lat=-6.963065&user_long=107.602518&user_postCode=&user_warehouseId=0&variants=".format(i, cari, (i-1)*60)
+        params.append(param)
+    return params
 
-    soup = bs4(driver.page_source, "html.parser")
-    # print(soup)
-    for items in soup.find_all('div', class_='css-1asz3by'):
-        nama_produk = items.find('div', class_='css-3um8ox').text
-        harga = items.find('div', class_='css-h66vau').text
-    
-    
-    #mengambil nilai rating menggunakan statment jika ada nilai kosong
-    rtg = items.findAll('span', class_='css-t70v7i')
-    if len(rtg) > 0:
-        rating = items.find('span', class_='css-t70v7i').text
-    else:
-        rating = ''
-        
-    #mengambil jumlah terjual menggunakan statment jika ada nilai kosong
-    tjl = items.findAll('span', class_='css-1sgek4h')
-    if len(tjl) > 0:
-        terjual = items.find('span', class_='css-1sgek4h').text
-    else:
-        terjual = ''
-        
-    for item2 in items.findAll('div', class_='css-1rn0irl'):
-        lokasi = item2.findAll('span', class_='css-1kdc32b')[0].text
-        toko = item2.findAll('span', class_='css-1kdc32b')[1].text
-    
-        data.append(
-            (toko, lokasi, nama_produk, harga, terjual, rating)
+#load data payload
+def scrape_data(param):
+    payload = f'[{{"operationName":"SearchProductQueryV4","variables":{{"params":"device=desktop&navsource=&ob=23&page=1&q={cari}&related=true&rows=60&safe_search=false&scheme=https&shipping=&show_adult=false&source=search&srp_component_id=02.01.00.00&srp_page_id=&srp_page_title=&st=product&start=0&topads_bucket=true&unique_id=c9ab2421a261b8c5ae9175c90a38f35f&user_addressId=69333763&user_cityId=148&user_districtId=1660&user_id=17066797&user_lat=-6.963065&user_long=107.602518&user_postCode=&user_warehouseId=0&variants="}},"query":"query SearchProductQueryV4($params: String\u0021) {{\\n  ace_search_product_v4(params: $params) {{\\n    header {{\\n      totalData\\n      totalDataText\\n      processTime\\n      responseCode\\n      errorMessage\\n      additionalParams\\n      keywordProcess\\n      componentId\\n      __typename\\n    }}\\n    data {{\\n      banner {{\\n        position\\n        text\\n        imageUrl\\n        url\\n        componentId\\n        trackingOption\\n        __typename\\n      }}\\n      backendFilters\\n      isQuerySafe\\n      ticker {{\\n        text\\n        query\\n        typeId\\n        componentId\\n        trackingOption\\n        __typename\\n      }}\\n      redirection {{\\n        redirectUrl\\n        departmentId\\n        __typename\\n      }}\\n      related {{\\n        position\\n        trackingOption\\n        relatedKeyword\\n        otherRelated {{\\n          keyword\\n          url\\n          product {{\\n            id\\n            name\\n            price\\n            imageUrl\\n            rating\\n            countReview\\n            url\\n            priceStr\\n            wishlist\\n            shop {{\\n              city\\n              isOfficial\\n              isPowerBadge\\n              __typename\\n            }}\\n            ads {{\\n              adsId: id\\n              productClickUrl\\n              productWishlistUrl\\n              shopClickUrl\\n              productViewUrl\\n              __typename\\n            }}\\n            badges {{\\n              title\\n              imageUrl\\n              show\\n              __typename\\n            }}\\n            ratingAverage\\n            labelGroups {{\\n              position\\n              type\\n              title\\n              url\\n              __typename\\n            }}\\n            componentId\\n            __typename\\n          }}\\n          componentId\\n          __typename\\n        }}\\n        __typename\\n      }}\\n      suggestion {{\\n        currentKeyword\\n        suggestion\\n        suggestionCount\\n        instead\\n        insteadCount\\n        query\\n        text\\n        componentId\\n        trackingOption\\n        __typename\\n      }}\\n      products {{\\n        id\\n        name\\n        ads {{\\n          adsId: id\\n          productClickUrl\\n          productWishlistUrl\\n          productViewUrl\\n          __typename\\n        }}\\n        badges {{\\n          title\\n          imageUrl\\n          show\\n          __typename\\n        }}\\n        category: departmentId\\n        categoryBreadcrumb\\n        categoryId\\n        categoryName\\n        countReview\\n        customVideoURL\\n        discountPercentage\\n        gaKey\\n        imageUrl\\n        labelGroups {{\\n          position\\n          title\\n          type\\n          url\\n          __typename\\n        }}\\n        originalPrice\\n        price\\n        priceRange\\n        rating\\n        ratingAverage\\n        shop {{\\n          shopId: id\\n          name\\n          url\\n          city\\n          isOfficial\\n          isPowerBadge\\n          __typename\\n        }}\\n        url\\n        wishlist\\n        sourceEngine: source_engine\\n        __typename\\n      }}\\n      violation {{\\n        headerText\\n        descriptionText\\n        imageURL\\n        ctaURL\\n        ctaApplink\\n        buttonText\\n        buttonType\\n        __typename\\n      }}\\n      __typename\\n    }}\\n    __typename\\n  }}\\n}}\\n"}}]'
+    req = requests.post(url, headers=header, data=payload).json()
+    rows = req[0]['data']['ace_search_product_v4']['data']['products']
+    # print(len(rows))
+
+    scrape_data = []
+    for i in range(0, len(rows)):
+        nama_produk = rows[i]['name']
+        harga = rows[i]['price']
+        rating = rows[i]['ratingAverage']
+        toko = rows[i]['shop']['name']
+        lokasi = rows[i]['shop']['city']
+        terjual = rows[i]['countReview']
+        scrape_data.append(
+            (toko, lokasi, nama_produk, terjual, harga, rating)
         )
-    
-    #pagenation
-    # time.sleep(2)
-    # driver.find_element(By.CSS_SELECTOR, "button[aria-label='Laman berikutnya']").click()
-    # time.sleep(3)
-    
-df = pd.DataFrame(data, columns=['Toko', 'Lokasi', 'Nama Barang', 'Harga', 'Terjual', 'Rating'])
+    return scrape_data
+
+if __name__ == '__main__':
+    params = get_params()
+    all_data = []
+    for i in range(0, len(params)):
+        param = params[i]
+        # print(param)
+        data = scrape_data(param)
+        all_data.extend(data)
+
+#insert dataframe
+df = pd.DataFrame(all_data, columns=['Toko', 'Lokasi', 'Nama Produk', 'Terjual', 'Harga', 'Rating'])
 print(df)
 
-#save file to excel
-# df.to_excel('data_stb.xlsx', index=False)
-# print("Data tersimpan")
-    
-driver.close()
+#save file
+df.to_excel('data_handphone.xlsx', index=False)
+print('Data Tersimpan')
